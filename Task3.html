@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Quiz Game</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .quiz-container {
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      width: 420px;
+      text-align: center;
+      animation: fadeIn 0.6s ease;
+      overflow-y: auto;
+      max-height: 90vh;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      color: #00ffff;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      color: #fff;
+    }
+
+    button {
+      background-color: #00ffff;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #0099ff;
+      transform: scale(1.05);
+    }
+
+    .option {
+      display: block;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 8px 0;
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: left;
+    }
+
+    .option:hover {
+      background: #333;
+    }
+
+    input[type="text"] {
+      width: 80%;
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+      background-color: #2a2a2a;
+      color: #fff;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #00ff99;
+      font-weight: bold;
+    }
+
+    #progress {
+      margin-bottom: 15px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .answers-list {
+      text-align: left;
+      background: #181818;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    }
+
+    .answers-list h4 {
+      color: #00ffff;
+    }
+
+    .correct {
+      color: #00ff99;
+      font-weight: bold;
+    }
+
+    .wrong {
+      color: #ff4c4c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1>🧠 Quiz</h1>
+    <div id="progress"></div>
+    <div id="quiz"></div>
+    <button id="nextBtn">Next</button>
+    <div id="result"></div>
+    <div id="answers"></div>
+  </div>
+
+  <script>
+    const quizData = [
+      {
+        type: "single",
+        question: "Which language runs in a web browser?",
+        options: ["Python", "C", "Java", "JavaScript"],
+        correct: "JavaScript"
+      },
+      {
+        type: "multi",
+        question: "Which of these are programming languages?",
+        options: ["HTML", "CSS", "Python", "C++"],
+        correct: ["Python", "C++"]
+      },
+      {
+        type: "fill",
+        question: "Fill in the blank: CSS stands for ______ Style Sheets.",
+        correct: "Cascading"
+      },
+      {
+        type: "single",
+        question: "What does HTML stand for?",
+        options: [
+          "HyperText Markup Language",
+          "HighText Machine Language",
+          "HyperTool Multi Language",
+          "Hyper Transfer Markup Language"
+        ],
+        correct: "HyperText Markup Language"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+
+    const quizContainer = document.getElementById("quiz");
+    const nextBtn = document.getElementById("nextBtn");
+    const result = document.getElementById("result");
+    const progress = document.getElementById("progress");
+    const answersDiv = document.getElementById("answers");
+
+    function loadQuestion() {
+      const q = quizData[currentQuestion];
+      progress.innerHTML = `Question ${currentQuestion + 1} of ${quizData.length}`;
+      quizContainer.innerHTML = `<h3>${q.question}</h3>`;
+
+      if (q.type === "single") {
+        q.options.forEach(opt => {
+          quizContainer.innerHTML += `
+            <label class="option">
+              <input type="radio" name="answer" value="${opt}"> ${opt}
+            </label>`;
+        });
+      } else if (q.type === "multi") {
+        q.options.forEach(opt => {
+          quizContainer.innerHTML += `
+            <label class="option">
+              <input type="checkbox" name="answer" value="${opt}"> ${opt}
+            </label>`;
+        });
+      } else if (q.type === "fill") {
+        quizContainer.innerHTML += `
+          <input type="text" id="fillAnswer" placeholder="Type your answer here..." />
+        `;
+      }
+    }
+
+    function checkAnswer() {
+      const q = quizData[currentQuestion];
+      let userAnswer;
+
+      if (q.type === "single") {
+        const selected = document.querySelector('input[name="answer"]:checked');
+        userAnswer = selected ? selected.value : "";
+        if (userAnswer === q.correct) score++;
+      }
+
+      if (q.type === "multi") {
+        const selected = Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(
+          i => i.value
+        );
+        userAnswer = selected;
+        if (JSON.stringify(selected.sort()) === JSON.stringify(q.correct.sort())) score++;
+      }
+
+      if (q.type === "fill") {
+        const ans = document.getElementById("fillAnswer").value.trim();
+        userAnswer = ans;
+        if (ans.toLowerCase() === q.correct.toLowerCase()) score++;
+      }
+
+      userAnswers.push(userAnswer);
+    }
+
+    function showCorrectAnswers() {
+      answersDiv.innerHTML = `<div class="answers-list"><h4>📘 Review Answers:</h4>`;
+      quizData.forEach((q, index) => {
+        let correctAns = Array.isArray(q.correct) ? q.correct.join(", ") : q.correct;
+        let userAns = userAnswers[index];
+        let isCorrect = false;
+
+        if (Array.isArray(q.correct)) {
+          isCorrect = JSON.stringify(userAns.sort?.() || []) === JSON.stringify(q.correct.sort());
+        } else {
+          isCorrect = (userAns || "").toString().trim().toLowerCase() === q.correct.toLowerCase();
+        }
+
+        let userAnsDisplay =
+          userAns && userAns.length > 0
+            ? Array.isArray(userAns)
+              ? userAns.join(", ")
+              : userAns
+            : "No answer";
+
+        answersDiv.innerHTML += `
+          <p><strong>${index + 1}. ${q.question}</strong><br>
+          ➤ Your Answer: <span class="${isCorrect ? 'correct' : 'wrong'}">${userAnsDisplay}</span><br>
+          ✅ Correct Answer: <span class="correct">${correctAns}</span></p>
+        `;
+      });
+      answersDiv.innerHTML += `</div>`;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      checkAnswer();
+      currentQuestion++;
+
+      if (currentQuestion < quizData.length) {
+        loadQuestion();
+      } else {
+        quizContainer.style.display = "none";
+        nextBtn.style.display = "none";
+        progress.style.display = "none";
+        result.innerHTML = `🎯 Your Final Score: ${score}/${quizData.length}`;
+        if (score === quizData.length) {
+          result.innerHTML += "<br>🏆 Excellent!";
+        } else if (score >= quizData.length / 2) {
+          result.innerHTML += "<br>👍 Good Job!";
+        } else {
+          result.innerHTML += "<br>💪 Keep Practicing!";
+        }
+        showCorrectAnswers();
+      }
+    });
+
+    loadQuestion();
+  </script>
+</body>
+</html>
